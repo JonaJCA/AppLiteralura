@@ -55,7 +55,7 @@ public class Principal {
                         listarLibrosRegistrados();
                         break;
                     case 3:
-                        //listarAutoresRegistrados();
+                        listarAutoresRegistrados();
                         break;
                     case 4:
                         //listarAutoresVivos();
@@ -151,6 +151,23 @@ public class Principal {
                         "\nIdioma: " + l.getIdioma().getIdioma() +
                         "\nNúmero de descargas: " + l.getDescargas() +
                         "\n----------------------------------------\n"
+        ));
+    }
+
+    public void listarAutoresRegistrados () {
+        System.out.println("""
+                    **********************************
+                      LISTAR AUTORES REGISTRADOS  
+                    **********************************
+                     """);
+        List<Autor> autores = repository.findAll();
+        System.out.println();
+        autores.forEach(l -> System.out.println(
+                "Autor: " + l.getNombre() +
+                        "\nFecha de Nacimiento: " + l.getNacimiento() +
+                        "\nFecha de Fallecimiento: " + l.getFallecimiento() +
+                        "\nLibros: " + l.getLibros().stream()
+                        .map(t -> t.getTitulo()).collect(Collectors.toList()) + "\n"
         ));
     }
 }
