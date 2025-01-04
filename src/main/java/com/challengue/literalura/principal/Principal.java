@@ -1,13 +1,11 @@
 package com.challengue.literalura.principal;
 
-import com.challengue.literalura.model.Autor;
-import com.challengue.literalura.model.Datos;
-import com.challengue.literalura.model.DatosLibro;
-import com.challengue.literalura.model.Libro;
+import com.challengue.literalura.model.*;
 import com.challengue.literalura.repository.LiteraturaRepository;
 import com.challengue.literalura.service.ConsumoAPI;
 import com.challengue.literalura.service.ConvierteDatos;
 
+import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -27,7 +25,7 @@ public class Principal {
     public void mostrarMenu() {
         var opcion = -1;
         var menu = """
-            ***** 📚 Bienvenido(a) a mi APP Literalura 📚 *****
+            *****  Bienvenido(a) a mi APP Literalura  *****
             ********************************************
                          📑 MENU PRINCIPAL 📑
             ********************************************
@@ -36,6 +34,7 @@ public class Principal {
             3 - Listar Autores Registrados
             4 - Listar Autores vivos en determinado año
             5 - Listar Libros por Idioma
+            6 - Estadisticas Generadas
             
             ********************************************
             0 - SALIR DEL PROGRAMA
@@ -61,7 +60,10 @@ public class Principal {
                         listarAutoresVivos();
                         break;
                     case 5:
-                        //listarLibrosPorIdioma();
+                        listarLibrosPorIdioma();
+                        break;
+                    case 6:
+                        generarEstadisticas();
                         break;
                     case 0:
                         System.out.println("Cerrando la App Literalura \uD83D\uDCD3 ...");
@@ -79,7 +81,7 @@ public class Principal {
     public void buscarLibroPorTitulo() {
         System.out.println("""
             ********************************
-             📔 BUSCAR LIBROS POR TÍTULO 📔
+              BUSCAR LIBROS POR TÍTULO 
             ********************************
              """);
         System.out.println("Introduzca el nombre del libro a buscar:");
@@ -140,7 +142,7 @@ public class Principal {
     public void listarLibrosRegistrados () {
         System.out.println("""
                     **********************************
-                     📕 LISTAR LIBROS REGISTRADOS 📕
+                      LISTAR LIBROS REGISTRADOS 
                     **********************************
                      """);
         List<Libro> libros = repository.buscarTodosLosLibros();
@@ -196,5 +198,90 @@ public class Principal {
         } catch (NumberFormatException e) {
             System.out.println("Ingresa un año válido " + e.getMessage());
         }
+    }
+
+    public void listarLibrosPorIdioma() {
+        System.out.println("""
+                ********************************
+                  LISTAR LIBROS POR IDIOMA 
+                ********************************
+                """);
+        var menu = """
+                    ***************************************************
+                    Seleccione el idioma del libro que desea encontrar:
+                    ***************************************************
+                    1 - Español
+                    2 - Francés
+                    3 - Inglés
+                    4 - Portugués
+                    ***************************************************
+                    """;
+        System.out.println(menu);
+
+        try {
+            var opcion = Integer.parseInt(teclado.nextLine());
+
+            switch (opcion) {
+                case 1:
+                    buscarLibrosPorIdioma("es");
+                    break;
+                case 2:
+                    buscarLibrosPorIdioma("fr");
+                    break;
+                case 3:
+                    buscarLibrosPorIdioma("en");
+                    break;
+                case 4:
+                    buscarLibrosPorIdioma("pt");
+                    break;
+                default:
+                    System.out.println("Opción inválida!");
+                    break;
+            }
+        } catch (NumberFormatException e) {
+            System.out.println("Opción no válida: " + e.getMessage());
+        }
+    }
+
+    private void buscarLibrosPorIdioma(String idioma) {
+        try {
+            Idioma idiomaEnum = Idioma.valueOf(idioma.toUpperCase());
+            List<Libro> libros = repository.buscarLibrosPorIdioma(idiomaEnum);
+            if (libros.isEmpty()) {
+                System.out.println("No hay libros registrados en ese idioma");
+            } else {
+                System.out.println();
+                libros.forEach(l -> System.out.println(
+                        "********** LIBRO  **********************************" +
+                                "\nTítulo: " + l.getTitulo() +
+                                "\nAutor: " + l.getAutor().getNombre() +
+                                "\nIdioma: " + l.getIdioma().getIdioma() +
+                                "\nNúmero de descargas: " + l.getDescargas() +
+                                "\n******************************************\n"
+                ));
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Introduce un idioma válido en el formato especificado.");
+        }
+    }
+
+    public void generarEstadisticas () {
+        System.out.println("""
+                    ****************************
+                      GENERAR ESTADÍSTICAS 
+                    ****************************
+                     """);
+        var json = consumoAPI.obtenerDatos(URL_BASE);
+        var datos = conversor.obtenerDatos(json, Datos.class);
+        IntSummaryStatistics est = datos.libros().stream()
+                .filter(l -> l.descargas() > 0)
+                .collect(Collectors.summarizingInt(DatosLibro::descargas));
+        Integer media = (int) est.getAverage();
+        System.out.println("\n************  ESTADÍSTICAS  ***********************");
+        System.out.println("Media de descargas: " + media);
+        System.out.println("Máxima de descargas: " + est.getMax());
+        System.out.println("Mínima de descargas: " + est.getMin());
+        System.out.println("Total registros para calcular las estadísticas: " + est.getCount());
+        System.out.println("***************************************************\n");
     }
 }
